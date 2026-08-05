@@ -1,14 +1,14 @@
 """
 ファイル一覧(パスのフラットリスト)を指示文に基づいてGroqに選ばせる。
-探索(walk_drive)は完全にコード側で行い、ここでは「選定」のみをLLMに任せる。
-Groq無料枠のTPM制限に収まるよう、CHUNK_SIZE件ずつに分けて問い合わせる。
+探索(walk_folder)は完全にコード側で行い、ここでは「選定」のみをLLMに任せる。
 """
 import json
 import os
+
 import httpx
 
 GROQ_URL = "https://api.groq.com/openai/v1/chat/completions"
-CHUNK_SIZE = 300  # 1リクエストあたりのファイル件数の目安。TPMに応じて調整可能
+CHUNK_SIZE = 300
 
 SYSTEM_PROMPT = """あなたはファイル選定アシスタントです。
 ユーザーの指示と、SharePoint上のファイル一覧(パス・サイズ・更新日)が与えられます。
@@ -61,7 +61,6 @@ async def select_files(instruction: str, files: list[dict]) -> list[str]:
                 parsed = json.loads(content)
                 selected_paths.update(parsed.get("selected", []))
             except json.JSONDecodeError:
-                # モデルが形式を崩した場合はこのチャンクをスキップ(全体は止めない)
                 continue
 
     return sorted(selected_paths)
