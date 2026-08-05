@@ -8,6 +8,7 @@ Graph API版と同じ。
 """
 import json
 import os
+import time
 from urllib.parse import quote
 
 import httpx
@@ -104,3 +105,29 @@ async def download_file(site_url: str, server_relative_url: str, state_path: str
             raise PermissionError("セッションが失効しています。scripts/login.py を再実行してください。")
         resp.raise_for_status()
         return resp.content
+
+
+# ---------- ローカルキャッシュ ----------
+# 探索結果(ファイルのフラットリスト)をローカルJSONに保存し、次回以降は
+# 再探索せずに読み込むだけで済むようにする。ツリー構造が大きく変わらない前提。
+
+def save_tree_cache(cache_path: str, files: list[dict]) -> None:
+    with open(cache_path, "w", encoding="utf-8") as f:
+        json.dump({"saved_at": time.time(), "files": files}, f, ensure_ascii=False)
+
+
+def load_tree_cache(cache_path: str) -> list[dict] | None:
+    if not os.path.exists(cache_path):
+        return None
+    with open(cache_path, "r", encoding="utf-8") as f:
+        data = json.load(f)
+    return data.get("files", [])
+
+
+def merge_subtree(files: list[dict], subfolder_prefix: str, new_subtree_files: list[dict]) -> list[dict]:
+    """
+    キャッシュ済みの files のうち、subfolder_prefix 配下に属する項目だけを
+    new_subtree_files(その部分だけを再探索した結果)で置き換える。
+    """
+    kept = [f for f in files if not f["path"].startswith(subfolder_prefix)]
+    return kept + new_subtree_files

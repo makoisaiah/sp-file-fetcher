@@ -27,8 +27,13 @@
 
   <section id="step-explore" class="disabled">
     <h3>2. ファイル構造を探索</h3>
-    <button onclick="doExplore()">探索する</button>
+    <button onclick="doExplore('auto')">探索する(キャッシュがあれば使用)</button>
+    <button onclick="doExplore('full')">全体を再探索</button>
     <div class="status" id="exploreStatus"></div>
+    <hr style="margin:12px 0; border-color:#e2e8f0;">
+    <div style="font-size:13px; color:#64748b;">特定フォルダだけ再探索(サーバー相対URL)</div>
+    <input id="subfolderPath" placeholder="/sites/FMU-examDB-m333/共有ドキュメント/過去問&授業資料">
+    <button onclick="doExploreSubfolder()">このフォルダだけ再探索</button>
   </section>
 
   <section id="step-select" class="disabled">
