@@ -1,0 +1,57 @@
+<!DOCTYPE html>
+<html lang="ja">
+<head>
+<meta charset="UTF-8">
+<title>SharePoint File Fetcher</title>
+<style>
+  body { font-family: system-ui, sans-serif; max-width: 640px; margin: 40px auto; padding: 0 16px; color: #1e293b; }
+  h1 { font-size: 20px; }
+  section { border: 1px solid #e2e8f0; border-radius: 10px; padding: 16px; margin-bottom: 16px; }
+  section.disabled { opacity: 0.4; pointer-events: none; }
+  input, textarea { width: 100%; padding: 8px; box-sizing: border-box; border: 1px solid #cbd5e1; border-radius: 6px; margin: 6px 0; font-size: 14px; }
+  button { padding: 8px 16px; background: #2563eb; color: white; border: none; border-radius: 6px; cursor: pointer; font-weight: 600; }
+  button:disabled { background: #94a3b8; cursor: not-allowed; }
+  #deviceInfo { background: #fef9c3; padding: 10px; border-radius: 6px; margin-top: 8px; font-size: 14px; }
+  ul { font-size: 13px; max-height: 240px; overflow-y: auto; padding-left: 18px; }
+  .status { font-size: 12px; color: #64748b; margin-top: 4px; }
+</style>
+</head>
+<body>
+  <h1>SharePoint File Fetcher</h1>
+
+  <section id="step-password">
+    <h3>1. 合言葉</h3>
+    <input id="password" type="password" placeholder="合言葉を入力">
+    <button onclick="doPassword()">ログイン</button>
+    <div class="status" id="passwordStatus"></div>
+  </section>
+
+  <section id="step-ms" class="disabled">
+    <h3>2. Microsoftアカウント</h3>
+    <button onclick="startMsLogin()">Microsoftでログイン</button>
+    <div id="deviceInfo" style="display:none;"></div>
+    <div class="status" id="msStatus"></div>
+  </section>
+
+  <section id="step-explore" class="disabled">
+    <h3>3. SharePointサイトを探索</h3>
+    <input id="siteUrl" placeholder="https://contoso.sharepoint.com/sites/TeamA">
+    <button onclick="doExplore()">探索する</button>
+    <div class="status" id="exploreStatus"></div>
+  </section>
+
+  <section id="step-select" class="disabled">
+    <h3>4. 取得したいファイルの指示</h3>
+    <textarea id="instruction" rows="3" placeholder="例: 2026年度の見積書のExcelファイルだけ"></textarea>
+    <button onclick="doSelect()">選定する</button>
+    <ul id="selectedList"></ul>
+  </section>
+
+  <section id="step-download" class="disabled">
+    <h3>5. ダウンロード</h3>
+    <button onclick="doDownload()">選定ファイルをZIPで取得</button>
+  </section>
+
+<script src="/static/app.js"></script>
+</body>
+</html>
