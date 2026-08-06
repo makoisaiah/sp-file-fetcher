@@ -3,7 +3,57 @@
 大学テナントのMicrosoft Graph API利用が管理者同意ポリシーでブロックされているため、
 OAuthアプリを経由せず、ブラウザの通常ログインで発行されるセッションCookieを使って
 SharePoint REST API(`_api/web/...`)を直接叩く構成に変更したもの。
-**ローカルPC上での実行専用**(Web公開は行わない)。
+**ローカルPC上での実行専用**(合言葉によるWeb公開は行わない)。
+
+## クイックスタート(GitHubから導入する場合)
+
+**前提として必要なもの**: Python 3.10以上、Git。入っているか確認するには:
+
+```bash
+python3 --version
+git --version
+```
+
+どちらかが無ければ、先にインストールしてください(Python: [python.org](https://www.python.org/downloads/)、
+Git: [git-scm.com](https://git-scm.com/downloads))。
+
+**1. リポジトリを取得する**
+
+```bash
+git clone https://github.com/makoisaiah/sp-file-fetcher.git
+cd sp-file-fetcher
+```
+
+(gitを使わず、GitHubのページ右上の「Code」→「Download ZIP」でダウンロードして展開してもOKです)
+
+**2. 設定ファイルを作る**
+
+```bash
+cp .env.example .env
+```
+
+作成された`.env`をテキストエディタで開き、少なくとも次の3つを自分の値に書き換えてください。
+
+```
+GROQ_API_KEY=（console.groq.com で取得した自分のAPIキー）
+SP_SITE_URL=https://（自分のテナント名）.sharepoint.com/sites/（サイト名）
+SP_LIBRARY_PATH=/sites/（サイト名）/（ドキュメントライブラリ名）
+```
+
+**3. 起動する**
+
+OSに応じて、以下のファイルをダブルクリックしてください(詳細は次の「起動方法」を参照)。
+
+| OS | ファイル |
+|---|---|
+| Linux | `run.sh`(ダブルクリックで実行できない場合は`chmod +x run.sh`を先に1回実行) |
+| macOS | `run.command`(初回はGatekeeper警告が出るので右クリック→「開く」) |
+| Windows | `run.bat` |
+
+初回はセットアップのため`.env`編集後もう一度起動が必要になりますが、2回目以降はダブルクリック一発で
+ブラウザが自動的に開きます。
+
+---
 
 ## 構成
 
@@ -35,28 +85,13 @@ OSに応じて、以下のファイルをダブルクリックしてください
 | macOS | `run.command` | 通常不要(初回はGatekeeperの警告が出ることがあるので、右クリック→「開く」で1回だけ許可) |
 | Windows | `run.bat` | 通常不要 |
 
-いずれも初回だけ自動セットアップ(仮想環境作成・依存パッケージインストール・ブラウザ本体のダウンロード)
-が走り、`.env`が無ければテンプレートから自動生成されて一旦終了します。`GROQ_API_KEY`等を編集してから
-もう一度同じファイルをダブルクリックすると、以降はセットアップをスキップしてすぐ起動し、既定のブラウザで
+いずれも初回だけ自動セットアップ(仮想環境作成・依存パッケージインストール)が走り、`.env`が無ければ
+テンプレートから自動生成されて一旦終了します。`GROQ_API_KEY`等を編集してからもう一度同じファイルを
+ダブルクリックすると、以降はセットアップをスキップしてすぐ起動し、既定のブラウザで
 `http://127.0.0.1:8000` が自動的に開きます。
 
 いずれのOSでも、実行中はターミナル/コマンドプロンプトのウィンドウが開いたままになります(裏で何が
 起きているか見えるようにするためあえて表示したままにしています)。閉じるとサーバーも終了します。
-
-### GitHub経由で配布・導入する場合
-
-このプロジェクトをGitHubリポジトリとして管理する場合、典型的な導入手順は次の形になります。
-
-```bash
-git clone <あなたのリポジトリURL>
-cd sp-file-fetcher-local
-cp .env.example .env
-# .env を編集(GROQ_API_KEY, SP_SITE_URL, SP_LIBRARY_PATH など)
-```
-
-その後、上記のOS別ファイルをダブルクリックするか、コマンドラインで直接起動してください。
-`.env`・`storage_state.json`・`tree_cache.json`・`facet_cache.json`は`.gitignore`済みなので、
-リポジトリには含まれません(各利用者が自分の環境で個別に作成する前提です)。
 
 **注意**: `run.sh` / `run.command` の実行権限(実行可能ビット)はgitで管理されるため、
 `git clone`した直後にダブルクリックで起動できない場合は、一度だけ以下を実行してください。
@@ -71,7 +106,6 @@ chmod +x run.sh run.command install_launcher.sh
 python -m venv .venv
 source .venv/bin/activate   # Windowsは .venv\Scripts\activate
 pip install -r requirements.txt
-playwright install --with-deps chromium   # Windows/macOSは --with-deps 不要
 
 cp .env.example .env
 ```
@@ -130,6 +164,8 @@ sudo dpkg --configure -a
 
 ## 注意点
 
+- `.env`・`storage_state.json`・`tree_cache.json`・`facet_cache.json`は`.gitignore`済みで
+  リポジトリには含まれません。`git clone`しただけでは存在しないので、各自`.env`を作成してください
 - `storage_state.json` にはログインCookieがそのまま入っているので、
   `.gitignore` に含めて絶対にコミットしないこと(すでに設定済み)
 - あくまで「自分が普段閲覧できる範囲」を自動化しているだけだが、
