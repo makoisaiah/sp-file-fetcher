@@ -125,6 +125,26 @@ def build_shallow_zip_paths(items: list[dict]) -> dict[str, str]:
     return result
 
 
+def exclude_keyword(files: list[dict], keyword: str) -> list[dict]:
+    """
+    ファイルの path にkeywordを含むものを除外する(NOT条件)。
+    「再試」のラベルが無いものをデフォルトで「本試」とみなす、といった
+    「ラベルが無いものを残したい」場面で使う(ANDのOR条件では表現できないため別関数にしている)。
+    """
+    if not keyword:
+        return files
+    kw = _normalize(keyword)
+    return [f for f in files if kw not in _normalize(f["path"])]
+
+
+def require_keyword(files: list[dict], keyword: str) -> list[dict]:
+    """ファイルの path にkeywordを含むものだけを残す(単純な部分一致の絞り込み)。"""
+    if not keyword:
+        return files
+    kw = _normalize(keyword)
+    return [f for f in files if kw in _normalize(f["path"])]
+
+
 def build_fixed_element_groups(
     years_back: int | None,
     semester: str,

@@ -171,6 +171,7 @@ async def select(body: dict):
       "years_back": 5,                              // 直近何年分か(ファイル名の年で判定)。0/nullで条件なし
       "semester": "前期",                            // "前期" / "後期" / ""(条件なし)
       "file_type": "both",                           // "kakomon" / "kaisetsu" / "both" / ""(条件なし)
+      "exam_type": "honshi",                         // "honshi"(本試のみ、再試を除く) / "saishi"(再試のみ) / ""(両方)
       "selections": {"分野": ["腎・泌尿器"], "担当科": ["内科"]}  // facetsから選んだラベル
     }
     """
@@ -180,6 +181,7 @@ async def select(body: dict):
     years_back = body.get("years_back") or 0
     semester = (body.get("semester") or "").strip()
     file_type = (body.get("file_type") or "").strip()
+    exam_type = (body.get("exam_type") or "").strip()
     selections = body.get("selections") or {}
 
     # 1. 年数/前期後期/種別のような固定条件をAND条件グループに変換(LLM不使用)
@@ -212,6 +214,13 @@ async def select(body: dict):
         folder_prefixes = sorted(prefixes)
         candidates = keyword_filter.expand_by_prefixes(STATE["files"], prefixes)
 
+    # 4.5 本試/再試は「ラベルの有無」で判定するNOT条件のため、AND/ORのグループ構造とは
+    #     別に、候補リストへ直接適用する(「再試」と書かれていないものはデフォルトで本試扱い)
+    if exam_type == "honshi":
+        candidates = keyword_filter.exclude_keyword(candidates, "再試")
+    elif exam_type == "saishi":
+        candidates = keyword_filter.require_keyword(candidates, "再試")
+
     # 5. 絞り込んだ候補(通常は数十件程度)だけを、条件を文章化した指示でGroqに渡し
     #    最終選定させる(件数が少ないので通常1リクエストで済む)
     instruction_parts = []
@@ -228,6 +237,10 @@ async def select(body: dict):
         instruction_parts.append("解説資料")
     elif file_type == "both":
         instruction_parts.append("過去問と解説資料")
+    if exam_type == "honshi":
+        instruction_parts.append("本試(再試は除く)")
+    elif exam_type == "saishi":
+        instruction_parts.append("再試")
     instruction = "の".join(instruction_parts) + "に該当するファイル"
 
     selected_paths = await groq_select.select_files(instruction, candidates)

@@ -22,6 +22,7 @@ function applyFixedFieldDefaults() {
   if (saved.yearsBack !== undefined) document.getElementById("yearsBack").value = saved.yearsBack;
   if (saved.semester !== undefined) document.getElementById("semester").value = saved.semester;
   if (saved.fileType !== undefined) document.getElementById("fileType").value = saved.fileType;
+  if (saved.examType !== undefined) document.getElementById("examType").value = saved.examType;
 }
 
 // ---------- 起動時の自動フロー ----------
@@ -291,6 +292,7 @@ async function doSelect() {
     years_back: parseInt(document.getElementById("yearsBack").value || "0", 10),
     semester: document.getElementById("semester").value,
     file_type: document.getElementById("fileType").value,
+    exam_type: document.getElementById("examType").value,
     selections: {
       "分野": getCheckedLabels("organChecks"),
       "担当科": getCheckedLabels("departmentChecks"),
@@ -301,6 +303,7 @@ async function doSelect() {
     yearsBack: fields.years_back,
     semester: fields.semester,
     fileType: fields.file_type,
+    examType: fields.exam_type,
     selections: fields.selections,
   }));
 

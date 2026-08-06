@@ -1,10 +1,9 @@
 #!/usr/bin/env bash
 # SharePoint File Fetcher をダブルクリックで起動するためのランチャー。
 #
-# 初回だけ: 仮想環境の作成・依存パッケージのインストール・
-#           Playwrightのブラウザ本体(+OS依存パッケージ)のインストールを行う。
-#           OS依存パッケージのインストールには管理者権限(sudo)が必要なため、
-#           ここで初めてパスワード入力を求められる。
+# 初回だけ: 仮想環境の作成・依存パッケージのインストールを行う。
+#           ブラウザは、既に入っているGoogle Chrome/Edgeをそのまま使うため
+#           (scripts/login.py側で自動選択)、通常は追加ダウンロードもsudoも不要。
 # 2回目以降: 何もインストールし直さず、そのままサーバーを起動してブラウザを開く。
 set -e
 cd "$(dirname "$0")"
@@ -13,7 +12,7 @@ VENV_DIR=".venv"
 MARKER_FILE="${VENV_DIR}/.setup_complete"
 
 if [ ! -f "$MARKER_FILE" ]; then
-    echo "=== 初回セットアップを行います(数分かかることがあります) ==="
+    echo "=== 初回セットアップを行います ==="
 
     if [ ! -d "$VENV_DIR" ]; then
         python3 -m venv "$VENV_DIR"
@@ -22,10 +21,6 @@ if [ ! -f "$MARKER_FILE" ]; then
 
     pip install --quiet --upgrade pip
     pip install --quiet -r requirements.txt
-
-    # ブラウザ本体+OS依存パッケージのインストール。ここで管理者権限が必要になる。
-    echo "ブラウザのインストールに管理者権限が必要です。パスワードを求められたら入力してください。"
-    playwright install --with-deps chromium
 
     if [ ! -f ".env" ]; then
         cp .env.example .env
@@ -38,6 +33,7 @@ if [ ! -f "$MARKER_FILE" ]; then
 
     touch "$MARKER_FILE"
     echo "=== セットアップ完了 ==="
+    echo "(ログイン時にChrome/Edgeが見つからない場合のみ、その場で案内が表示されます)"
 else
     source "${VENV_DIR}/bin/activate"
 fi

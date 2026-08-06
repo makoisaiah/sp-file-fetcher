@@ -103,6 +103,13 @@
       <option value="">指定なし</option>
     </select>
 
+    <label>試験(本試/再試)</label>
+    <select id="examType">
+      <option value="">指定なし(両方)</option>
+      <option value="honshi">本試のみ(再試を除く)</option>
+      <option value="saishi">再試のみ</option>
+    </select>
+
     <button onclick="doSelect()">この条件で検索</button>
     <div class="status" id="selectInfo"></div>
     <ul id="selectedList"></ul>

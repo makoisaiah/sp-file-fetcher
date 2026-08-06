@@ -17,9 +17,6 @@ if not exist "%MARKER_FILE%" (
     python -m pip install --quiet --upgrade pip
     pip install --quiet -r requirements.txt
 
-    REM Windowsではブラウザは通常ユーザー領域にダウンロードされ、管理者権限は不要
-    playwright install chromium
-
     if not exist ".env" (
         copy .env.example .env >nul
         echo.
@@ -31,6 +28,7 @@ if not exist "%MARKER_FILE%" (
 
     type nul > "%MARKER_FILE%"
     echo === セットアップ完了 ===
+    echo (ログイン時にChrome/Edgeが見つからない場合のみ、その場で案内が表示されます)
 ) else (
     call "%VENV_DIR%\Scripts\activate.bat"
 )

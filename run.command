@@ -19,9 +19,6 @@ if [ ! -f "$MARKER_FILE" ]; then
     pip install --quiet --upgrade pip
     pip install --quiet -r requirements.txt
 
-    # macOSではブラウザは通常ユーザー領域にダウンロードされ、管理者権限は不要
-    playwright install chromium
-
     if [ ! -f ".env" ]; then
         cp .env.example .env
         echo ""
@@ -33,6 +30,7 @@ if [ ! -f "$MARKER_FILE" ]; then
 
     touch "$MARKER_FILE"
     echo "=== セットアップ完了 ==="
+    echo "(ログイン時にChrome/Edgeが見つからない場合のみ、その場で案内が表示されます)"
 else
     source "${VENV_DIR}/bin/activate"
 fi
