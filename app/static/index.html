@@ -7,26 +7,52 @@
   body { font-family: system-ui, sans-serif; max-width: 640px; margin: 40px auto; padding: 0 16px; color: #1e293b; }
   h1 { font-size: 20px; }
   section { border: 1px solid #e2e8f0; border-radius: 10px; padding: 16px; margin-bottom: 16px; }
+  section.hidden { display: none; }
   section.disabled { opacity: 0.4; pointer-events: none; }
-  input, textarea { width: 100%; padding: 8px; box-sizing: border-box; border: 1px solid #cbd5e1; border-radius: 6px; margin: 6px 0; font-size: 14px; }
-  button { padding: 8px 16px; background: #2563eb; color: white; border: none; border-radius: 6px; cursor: pointer; font-weight: 600; }
+  input, textarea, select { width: 100%; padding: 8px; box-sizing: border-box; border: 1px solid #cbd5e1; border-radius: 6px; margin: 4px 0 10px 0; font-size: 14px; }
+  label { font-size: 12px; color: #475569; font-weight: 600; }
+  .checklist { display: flex; flex-wrap: wrap; gap: 6px; margin: 4px 0 10px 0; }
+  .checklist label { display: flex; align-items: center; gap: 4px; font-weight: 400; font-size: 13px;
+    background: #f1f5f9; padding: 4px 8px; border-radius: 999px; cursor: pointer; }
+  .checklist input { width: auto; margin: 0; }
+  button { padding: 8px 16px; background: #2563eb; color: white; border: none; border-radius: 6px; cursor: pointer; font-weight: 600; margin-right: 6px; }
+  button.secondary { background: #64748b; }
   button:disabled { background: #94a3b8; cursor: not-allowed; }
   ul { font-size: 13px; max-height: 240px; overflow-y: auto; padding-left: 18px; }
   .status { font-size: 12px; color: #64748b; margin-top: 4px; }
   .warn { color: #b45309; }
+  .link-toggle { font-size: 12px; color: #2563eb; cursor: pointer; text-decoration: underline; margin-top: 8px; display: inline-block; }
 </style>
 </head>
 <body>
   <h1>SharePoint File Fetcher (Local)</h1>
 
-  <section id="step-status">
-    <h3>1. ログイン状態の確認</h3>
-    <button onclick="checkStatus()">確認する</button>
-    <div class="status" id="statusMsg"></div>
+  <section id="step-login" class="hidden">
+    <h3>ログインが必要です</h3>
+    <p style="font-size:13px; color:#475569;">
+      「ログインを開始」を押すとブラウザが開きます。Microsoftアカウントでいつも通りログインしてください
+      (自動検知するので、ログイン後にこの画面に戻ってくる必要はありません)。
+    </p>
+    <button id="loginStartBtn" onclick="startLogin()">ログインを開始</button>
+    <div class="status" id="loginStatus"></div>
   </section>
 
-  <section id="step-explore" class="disabled">
-    <h3>2. ファイル構造を探索</h3>
+  <section id="step-onboarding" class="hidden">
+    <h3>準備</h3>
+    <p style="font-size:13px; color:#475569;">
+      ファイル構造を取得し、検索メニュー(分野・担当科の選択肢)を自動で準備します。
+    </p>
+    <button onclick="runOnboarding()">はい、実行する</button>
+    <button class="secondary" onclick="skipOnboarding()">手動で設定する</button>
+    <div class="status" id="onboardingStatus"></div>
+  </section>
+
+  <div id="advancedToggleWrap" class="hidden">
+    <span class="link-toggle" onclick="toggleAdvanced()" id="advancedToggleLink">詳細設定を表示</span>
+  </div>
+
+  <section id="step-explore" class="hidden">
+    <h3>ファイル構造を探索</h3>
     <button onclick="doExplore('auto')">探索する(キャッシュがあれば使用)</button>
     <button onclick="doExplore('full')">全体を再探索</button>
     <div class="status" id="exploreStatus"></div>
@@ -36,17 +62,55 @@
     <button onclick="doExploreSubfolder()">このフォルダだけ再探索</button>
   </section>
 
-  <section id="step-select" class="disabled">
-    <h3>3. 取得したいファイルの指示</h3>
-    <textarea id="instruction" rows="3" placeholder="例: 2026年度の見積書のExcelファイルだけ"></textarea>
-    <button onclick="doSelect()">選定する</button>
+  <section id="step-facets" class="hidden">
+    <h3>検索メニューの準備</h3>
+    <button onclick="generateFacets()">選択肢を生成/更新</button>
+    <button class="secondary" onclick="toggleFacetEditor()">手直しする</button>
+    <div class="status" id="facetsStatus"></div>
+    <div id="facetEditorBox" style="display:none; margin-top:10px;">
+      <div style="font-size:12px; color:#64748b; margin-bottom:4px;">
+        JSON形式で直接編集できます(label/keywordsの配列)。保存すると次回検索から反映されます。
+      </div>
+      <textarea id="facetEditorText" rows="14" style="font-family: monospace; font-size:12px;"></textarea>
+      <button onclick="saveFacetEdits()">保存する</button>
+    </div>
+  </section>
+
+  <section id="step-select" class="hidden">
+    <h3>検索条件</h3>
+
+    <label>直近何年分(ファイル名の年で判定・0で条件なし)</label>
+    <input type="number" id="yearsBack" min="0" value="5">
+
+    <label>前期/後期</label>
+    <select id="semester">
+      <option value="">指定なし</option>
+      <option value="前期">前期</option>
+      <option value="後期">後期</option>
+    </select>
+
+    <label>分野(複数選択可)</label>
+    <div id="organChecks" class="checklist"></div>
+
+    <label>担当科(複数選択可)</label>
+    <div id="departmentChecks" class="checklist"></div>
+
+    <label>ファイル種別</label>
+    <select id="fileType">
+      <option value="both">過去問+解説資料</option>
+      <option value="kakomon">過去問のみ</option>
+      <option value="kaisetsu">解説資料のみ</option>
+      <option value="">指定なし</option>
+    </select>
+
+    <button onclick="doSelect()">この条件で検索</button>
     <div class="status" id="selectInfo"></div>
     <ul id="selectedList"></ul>
   </section>
 
-  <section id="step-download" class="disabled">
-    <h3>4. ダウンロード</h3>
-    <button onclick="doDownload()">選定ファイルをZIPで取得</button>
+  <section id="step-download" class="hidden">
+    <h3>ダウンロード</h3>
+    <button onclick="doDownload()" id="downloadBtn" disabled>選定ファイルをZIPで取得</button>
   </section>
 
 <script src="/static/app.js"></script>

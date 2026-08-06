@@ -23,13 +23,55 @@ app/main.py (FastAPI, 127.0.0.1限定)
 プロセスを一切経由せず、あなたが普段ブラウザで見ているのと同じセッションを
 プログラムから使っているだけのため、Entra ID側のアプリ同意ポリシーの対象外。
 
-## セットアップ
+## 起動方法
+
+### ダブルクリックで起動したい場合(推奨)
+
+OSに応じて、以下のファイルをダブルクリックしてください。
+
+| OS | ファイル | 管理者権限 |
+|---|---|---|
+| Linux | `run.sh` (事前に`./install_launcher.sh`を1回実行するとアイコン登録もされる) | 初回のみターミナル上でsudoパスワードを求められる(ブラウザ本体のOS依存パッケージインストールのため) |
+| macOS | `run.command` | 通常不要(初回はGatekeeperの警告が出ることがあるので、右クリック→「開く」で1回だけ許可) |
+| Windows | `run.bat` | 通常不要 |
+
+いずれも初回だけ自動セットアップ(仮想環境作成・依存パッケージインストール・ブラウザ本体のダウンロード)
+が走り、`.env`が無ければテンプレートから自動生成されて一旦終了します。`GROQ_API_KEY`等を編集してから
+もう一度同じファイルをダブルクリックすると、以降はセットアップをスキップしてすぐ起動し、既定のブラウザで
+`http://127.0.0.1:8000` が自動的に開きます。
+
+いずれのOSでも、実行中はターミナル/コマンドプロンプトのウィンドウが開いたままになります(裏で何が
+起きているか見えるようにするためあえて表示したままにしています)。閉じるとサーバーも終了します。
+
+### GitHub経由で配布・導入する場合
+
+このプロジェクトをGitHubリポジトリとして管理する場合、典型的な導入手順は次の形になります。
+
+```bash
+git clone <あなたのリポジトリURL>
+cd sp-file-fetcher-local
+cp .env.example .env
+# .env を編集(GROQ_API_KEY, SP_SITE_URL, SP_LIBRARY_PATH など)
+```
+
+その後、上記のOS別ファイルをダブルクリックするか、コマンドラインで直接起動してください。
+`.env`・`storage_state.json`・`tree_cache.json`・`facet_cache.json`は`.gitignore`済みなので、
+リポジトリには含まれません(各利用者が自分の環境で個別に作成する前提です)。
+
+**注意**: `run.sh` / `run.command` の実行権限(実行可能ビット)はgitで管理されるため、
+`git clone`した直後にダブルクリックで起動できない場合は、一度だけ以下を実行してください。
+
+```bash
+chmod +x run.sh run.command install_launcher.sh
+```
+
+### コマンドラインで起動する場合(全OS共通)
 
 ```bash
 python -m venv .venv
-source .venv/bin/activate
+source .venv/bin/activate   # Windowsは .venv\Scripts\activate
 pip install -r requirements.txt
-playwright install chromium
+playwright install --with-deps chromium   # Windows/macOSは --with-deps 不要
 
 cp .env.example .env
 ```
@@ -45,25 +87,30 @@ cp .env.example .env
 ## 使い方
 
 ```bash
-# 1. ログイン(初回・セッション失効時に実行)
-python scripts/login.py
-
-# 2. アプリ起動
 uvicorn app.main:app --reload
 ```
 
-`http://localhost:8000` を開いて:
+(ダブルクリック起動の場合はこの手順は不要です)
 
-1. 「確認する」でログイン状態をチェック
-2. 「探索する」でファイル構造を取得
-3. 自然文で指示を入力 →「選定する」でGroqが該当ファイルを選ぶ
-4. 「ダウンロード」でZIP取得
+`http://localhost:8000` を開くと:
+
+1. 未ログインなら自動でログイン案内が表示されるので、「ログインを開始」を押す
+   → ブラウザが開くのでMicrosoftアカウントでログイン(ログイン完了は自動検知されるので、
+   ターミナル操作は不要)
+2. ログインを検知すると「準備」画面が出るので、「はい、実行する」を押すと
+   ファイル構造の探索と検索メニューの生成が自動で進む(手動で個別に行いたい場合は
+   「手動で設定する」を選ぶと、詳細操作画面がそのまま開く)
+3. 自然文ではなく選択式の条件(年数・前期後期・分野・担当科・種別)で検索
+4. 「ダウンロード」で選定ファイルをZIP取得(ZIP内の階層は浅く保たれます)
+
+「詳細設定を表示」リンクからは、いつでも手動探索・検索メニューの手直し(仕分け結果の
+JSON直接編集)ができます。
 
 ## セッションが切れたら
 
 `/api/explore` や `/api/download` が401エラーを返したら、セッションが失効しています。
-`python scripts/login.py` を再実行してブラウザで再ログインし、
-保存された `storage_state.json` を更新してください。
+アプリ画面に「ログインを開始」が再表示されるので、そこから再ログインしてください
+(`python scripts/login.py` を手動実行しても構いません)。
 
 ## 注意点
 

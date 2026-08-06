@@ -4,3 +4,4 @@ __pycache__/
 .venv/
 storage_state.json
 tree_cache.json
+facet_cache.json
